@@ -2,13 +2,23 @@
   {
     "name": "week",
     "title": "This week",
-    "subtitle": "Carbon Accounting for Claude Code: what needs attention, rendered by npm run view",
+    "subtitle": "Carbon Accounting for Claude Code: what needs a person, rendered by npm run view",
     "sections": [
-      {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
-      }
+      { "title": "Needs attention", "note": "Customer deadlines, suppliers who have not replied, missing bills and compliance items.",
+        "sql": "select what, item, detail from carbon.attention order by sort_on, what, item" },
+      { "title": "Missing months", "sql": "select source, site, month, data_owner as ask from carbon.data_gaps order by source, month" },
+      { "title": "Customer requests", "sql": "select customer, inventory, asked_for, due_on, days_left from (select cr.customer, i.name as inventory, cr.asked_for, cr.due_on, cr.due_on - current_date as days_left, cr.answered_on from carbon.customer_requests cr left join carbon.inventories i on i.id = cr.inventory_id) x where answered_on is null order by due_on nulls last" }
+    ]
+  },
+  {
+    "name": "footprint",
+    "title": "Footprint",
+    "subtitle": "Every year side by side, the biggest sources this year, and progress on the target",
+    "sections": [
+      { "title": "By year", "sql": "select inventory as year, status, scope1_t as scope_1, scope2_t as scope_2, scope3_t as scope_3, total_t as total, case when months_elapsed < months_total then months_elapsed || ' of ' || months_total || ' months' else 'full year' end as covers from carbon.inventory_totals order by starts_on" },
+      { "title": "Biggest sources this year", "sql": "select source, site, scope, round(tco2e, 1) as tco2e from carbon.inventory_sources s join carbon.inventories i on i.id = s.inventory_id where i.status = 'open' order by tco2e desc limit 10" },
+      { "title": "Reduction actions", "sql": "select a.name as action, st.name as site, a.owner, a.status, a.saving_tco2e_per_year as saving_t_per_year, a.due_on from carbon.actions a left join carbon.sites st on st.id = a.site_id where a.status <> 'dropped' order by a.status, a.due_on" },
+      { "title": "Compliance", "sql": "select severity, rule, coalesce(item, inventory) as item, finding from carbon.compliance_findings order by severity, rule" }
     ]
   }
 ]

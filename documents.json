@@ -1,11 +1,45 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "emissions-inventory",
+    "title": "Greenhouse gas emissions inventory",
+    "for_each": "select id, name from carbon.inventories order by starts_on",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      { "title": "Summary", "note": "Measured under the GHG Protocol Corporate Standard, operational control. Scope 2 is location-based. tCO2e = tonnes of carbon dioxide equivalent.",
+        "sql": "select inventory as year, status, starts_on as from_date, ends_on as to_date, scope1_t as scope_1_tco2e, scope2_t as scope_2_tco2e, scope3_t as scope_3_tco2e, total_t as total_tco2e from carbon.inventory_totals where inventory_id = $1" },
+      { "title": "By scope and category",
+        "sql": "select case scope when 3 then 'Scope 3.' || scope3_category else 'Scope ' || scope end as scope, category, round(sum(tco2e), 2) as tco2e, round(100 * sum(tco2e) / nullif(sum(sum(tco2e)) over (), 0), 1) as share_pct from carbon.inventory_sources where inventory_id = $1 group by scope, scope3_category, category order by scope, scope3_category nulls first, tco2e desc" },
+      { "title": "By site",
+        "sql": "select coalesce(site, 'Suppliers (purchased goods)') as site, round(sum(tco2e) filter (where scope = 1), 2) as scope_1, round(sum(tco2e) filter (where scope = 2), 2) as scope_2, round(sum(tco2e) filter (where scope = 3), 2) as scope_3, round(sum(tco2e), 2) as total from carbon.inventory_sources where inventory_id = $1 group by site order by total desc" },
+      { "title": "Activity data and factors", "note": "Each source's quantity for the year, the factor edition used, and the share that was estimated.",
+        "sql": "select source, category, quantity, unit, factor_edition, round(tco2e, 2) as tco2e, round(100 * estimated_share, 1) as estimated_pct from carbon.inventory_sources where inventory_id = $1 order by scope, tco2e desc" },
+      { "title": "Emission factors",
+        "sql": "select distinct f.category, f.region, f.valid_year, f.kg_co2e_per_unit, f.edition, f.table_ref, f.source_url from carbon.inventory_activity ia join carbon.factors f on f.id = ia.factor_id where ia.inventory_id = $1 order by f.category, f.region, f.valid_year" },
+      { "title": "Sign-off",
+        "sql": "select status, locked_on, locked_by, lock_note, case when is_base_year then 'Base year' else '' end as base_year from carbon.inventories where id = $1" }
+    ]
+  },
+  {
+    "name": "customer-emissions-statement",
+    "title": "Supplier emissions statement",
+    "for_each": "select cr.id, cr.customer || ' ' || i.name as name from carbon.customer_requests cr join carbon.inventories i on i.id = cr.inventory_id order by cr.received_on",
+    "file": "name",
+    "sections": [
+      { "title": "Request", "sql": "select cr.customer, cr.asked_for, cr.received_on, cr.due_on, i.name as reporting_year, i.starts_on as from_date, i.ends_on as to_date, i.status from carbon.customer_requests cr join carbon.inventories i on i.id = cr.inventory_id where cr.id = $1" },
+      { "title": "Our emissions for the year", "note": "GHG Protocol Corporate Standard, operational control, location-based scope 2.",
+        "sql": "select t.scope1_t as scope_1_tco2e, t.scope2_t as scope_2_tco2e, t.scope3_t as scope_3_tco2e, t.total_t as total_tco2e, round(t.total_t / nullif(t.output_units, 0), 4) as tco2e_per_output_unit, t.output_unit_label as output_unit from carbon.customer_requests cr join carbon.inventory_totals t on t.inventory_id = cr.inventory_id where cr.id = $1" },
+      { "title": "By category",
+        "sql": "select case s.scope when 3 then 'Scope 3.' || s.scope3_category else 'Scope ' || s.scope end as scope, s.category, round(sum(s.tco2e), 2) as tco2e from carbon.customer_requests cr join carbon.inventory_sources s on s.inventory_id = cr.inventory_id where cr.id = $1 group by s.scope, s.scope3_category, s.category order by s.scope, s.scope3_category nulls first, tco2e desc" }
+    ]
+  },
+  {
+    "name": "supplier-data-request",
+    "title": "Request for supplier emissions",
+    "for_each": "select sr.id, sr.supplier || ' ' || i.name as name from carbon.supplier_requests sr join carbon.inventories i on i.id = sr.inventory_id where sr.received_on is null order by sr.supplier",
+    "file": "name",
+    "sections": [
+      { "title": "What we are asking for", "note": "Your emissions for the goods you supplied us in this period, in tonnes CO2e, and how you allocated them to us (tonnes, units or dollars sold).",
+        "sql": "select sr.supplier, i.name as reporting_year, i.starts_on as from_date, i.ends_on as to_date, sr.due_on as reply_by, sr.contact from carbon.supplier_requests sr join carbon.inventories i on i.id = sr.inventory_id where sr.id = $1" }
     ]
   }
 ]

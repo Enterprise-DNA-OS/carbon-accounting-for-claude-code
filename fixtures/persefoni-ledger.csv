@@ -1,0 +1,9 @@
+Record ID,Facility,Country,State,Activity Name,Activity Type,Start Date,End Date,Quantity,Unit,Emissions (tCO2e)
+PF-1001,Sydney warehouse,Australia,NSW,Warehouse power July,Electricity - grid,01/07/2026,31/07/2026,47.2,MWh,30.2
+PF-1002,Sydney warehouse,Australia,NSW,Warehouse power August,Electricity - grid,2026-08-01,2026-08-31,"45,900",kWh,29.4
+PF-1003,Melbourne sales office,Australia,VIC,Office power September,Purchased Electricity,2026-09-01,2026-09-30,3200,kWh,2.5
+PF-1004,Christchurch plant,New Zealand,,Delivery fleet July,Mobile combustion - diesel fleet,01/07/2026,31/07/2026,4050,L,10.9
+PF-1005,Christchurch plant,New Zealand,,"Hotel stays, Sydney trips",Business travel - hotel stay Australia,01/07/2026,30/09/2026,31,nights,0.93
+PF-1006,Christchurch plant,New Zealand,,Coolroom top-up,Refrigerant leakage,01/08/2026,31/08/2026,4.5,kg,8.8
+PF-1002,Sydney warehouse,Australia,NSW,Warehouse power August,Electricity - grid,2026-08-01,2026-08-31,"45,900",kWh,29.4
+PF-1007,Christchurch plant,New Zealand,,Plant power May 2025,Electricity - grid,2025-05-01,2025-05-31,176000,kWh,13.8
